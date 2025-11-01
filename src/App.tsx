@@ -3,12 +3,17 @@ import { Canvas, FabricText, Circle, FabricImage } from "fabric";
 import { useEffect, useRef, useState } from "react";
 import image1Url from './assets/image.png';
 import image2Url from './assets/28.svg';
+import { app, storage } from "./firebase";
+import { uploadString, ref } from "firebase/storage";
+
+
 
 function App() {
+  const filename = 'filetest.png'; // unique name for each upload
   const canvasRef = useRef(null);
   const [canvas, setCanvas] = useState<Canvas | null>(null);
 
-  function imageLoad(imageUrl: string) {
+  function stickerLoad(imageUrl: string) {
     if (canvas) {
       const img = new Image();
       img.src = imageUrl;
@@ -53,24 +58,25 @@ function App() {
   });
 
   function saveImage() {
+    const photoStrips = ref(storage, 'photoStrips/' + filename);
     if (canvas) {
       const dataURL = canvas.toDataURL({
         multiplier: 1,
         format: 'png',
         quality: 1.0,
       });
-      const link = document.createElement('a');
-      link.href = dataURL;
-      link.download = 'canvas_image.png';
-      link.click();
+      
+      uploadString(photoStrips, dataURL, 'data_url').then((snapshot) => {
+        console.log('uploaded data file successfully');
+      });
     }
   }
 
   useEffect(() => {
     if (canvasRef.current) {
       const initCanvas = new Canvas(canvasRef.current, {
-        height: 500,
-        width: window.innerWidth * 0.8,
+        height: window.innerHeight * 0.8,
+        width: (2/3) * (window.innerHeight * 0.8),
         backgroundColor: "white",
       });
 
@@ -78,7 +84,7 @@ function App() {
       setCanvas(initCanvas);
 
       function handleResize() {
-        const width = window.innerWidth * 0.8;
+        const width = (2/3) * (window.innerHeight * 0.8);
         const height = window.innerHeight * 0.8;
 
         initCanvas.setWidth(width);
@@ -101,9 +107,9 @@ function App() {
       <button onClick={addCircle}>Add Circle</button>
       
       <div className='imagesContainer'>
-        <button onClick={() => imageLoad(image1Url)}>asd</button>
-        <button onClick={() => imageLoad(image2Url)}>asd</button>
-        <button onClick={saveImage}>asd</button>
+        <button onClick={() => stickerLoad(image1Url)}>sticker 1</button>
+        <button onClick={() => stickerLoad(image2Url)}>sticker 2</button>
+        <button onClick={saveImage}>Save Image</button>
         <button>asd</button>
       </div>
     </div>
