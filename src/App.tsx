@@ -9,9 +9,51 @@ import { uploadString, ref } from "firebase/storage";
 
 
 function App() {
-  const filename = 'filetest.png'; // unique name for each upload
+
+  
+  const filename = 'filetest.png'; // unique name for each upload 
   const canvasRef = useRef(null);
   const [canvas, setCanvas] = useState<Canvas | null>(null);
+
+  const _clipboard = useRef<any[]>([]);
+
+  function Copy(){
+    
+    _clipboard.current = [];
+    if (canvas){
+      console.log('copy');
+      const selected = canvas.getActiveObjects();
+      if (selected.length === 0 ) return;
+      selected.forEach((obj: any) => {
+        obj.clone().then((cloned: any) => {
+          _clipboard.current.push(cloned);
+        });
+      });
+     
+      
+    }
+  }
+
+  function Paste(){
+    if (canvas){
+      
+      const clonedObj: any[] = [];
+      _clipboard.current.forEach((Obj: any) => {
+        Obj.clone().then((cloned: any) => {
+          cloned.set({
+            left: cloned.left + 10,
+            top: cloned.top + 10,
+          })
+          clonedObj.push(cloned);
+          canvas.discardActiveObject();
+        });
+      })
+
+      
+    }
+  }
+
+  
 
   function stickerLoad(imageUrl: string) {
     if (canvas) {
@@ -23,6 +65,7 @@ function App() {
           top: 100,
         });
         canvas.add(fabricImage);
+        console.log('sticker added'); 
         canvas.renderAll();
       }
       
@@ -51,11 +94,6 @@ function App() {
     }
   }
 
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Delete") {
-      delObject();
-    }
-  });
 
   function saveImage() {
     const photoStrips = ref(storage, 'photoStrips/' + filename);
@@ -71,6 +109,21 @@ function App() {
       });
     }
   }
+
+  useEffect(() => {
+    const keydownHandler = (e: KeyboardEvent) => {
+      if (e.key === 'Delete') delObject();
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') Copy();
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v') Paste();
+    };
+    document.addEventListener("keydown", keydownHandler);
+    return () => {
+      document.removeEventListener("keydown", keydownHandler);
+    }
+  }, [canvas])
+  
 
   useEffect(() => {
     if (canvasRef.current) {
@@ -93,10 +146,12 @@ function App() {
       }
 
       window.addEventListener("resize", handleResize);
-
+      
+      
       return () => {
         initCanvas.dispose();
         window.removeEventListener("resize", handleResize);
+        
       };
     }
   }, []);
