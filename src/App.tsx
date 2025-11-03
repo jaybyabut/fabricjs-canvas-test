@@ -10,50 +10,60 @@ import { uploadString, ref } from "firebase/storage";
 
 function App() {
 
-  
+
   const filename = 'filetest.png'; // unique name for each upload 
   const canvasRef = useRef(null);
   const [canvas, setCanvas] = useState<Canvas | null>(null);
 
-  const _clipboard = useRef<any[]>([]);
+  let clipboard: any;
 
-  function Copy(){
-    
-    _clipboard.current = [];
-    if (canvas){
-      console.log('copy');
-      const selected = canvas.getActiveObjects();
-      if (selected.length === 0 ) return;
-      selected.forEach((obj: any) => {
-        obj.clone().then((cloned: any) => {
-          _clipboard.current.push(cloned);
-        });
-      });
-     
-      
-    }
-  }
-
-  function Paste(){
-    if (canvas){
-      
-      const clonedObj: any[] = [];
-      _clipboard.current.forEach((Obj: any) => {
-        Obj.clone().then((cloned: any) => {
-          cloned.set({
-            left: cloned.left + 10,
-            top: cloned.top + 10,
-          })
-          clonedObj.push(cloned);
-          canvas.discardActiveObject();
-        });
+  function Copy() {
+    if (canvas) {
+      const objs = canvas.getActiveObject();
+      objs?.clone().then((cloned) => {
+        clipboard = cloned;
       })
+    }
 
-      
+  }
+
+  function Paste() {
+    if (canvas) {
+      let clonedObjs = null;
+      clipboard.clone().then((cloned: any) => {
+        clonedObjs = cloned;
+        canvas.discardActiveObject();
+        clonedObjs.set({
+          left: clonedObjs.left + 10,
+          top: clonedObjs.top + 10,
+          evented: true,
+        });
+
+        if (clonedObjs.type === 'activeSelection') {
+
+          clonedObjs.canvas = canvas;
+          clonedObjs.forEachObject(function (obj: any) {
+            canvas.add(obj);
+          });
+
+          clonedObjs.setCoords();
+        } else {
+          canvas.add(clonedObjs);
+        }
+
+        canvas.setActiveObject(clonedObjs);
+        canvas.requestRenderAll();
+      });
+
+
+
+
+
+
     }
   }
 
-  
+
 
   function stickerLoad(imageUrl: string) {
     if (canvas) {
@@ -65,10 +75,10 @@ function App() {
           top: 100,
         });
         canvas.add(fabricImage);
-        console.log('sticker added'); 
+        console.log('sticker added');
         canvas.renderAll();
       }
-      
+
     }
   }
 
@@ -103,7 +113,7 @@ function App() {
         format: 'png',
         quality: 1.0,
       });
-      
+
       uploadString(photoStrips, dataURL, 'data_url').then((snapshot) => {
         console.log('uploaded data file successfully');
       });
@@ -123,13 +133,13 @@ function App() {
       document.removeEventListener("keydown", keydownHandler);
     }
   }, [canvas])
-  
+
 
   useEffect(() => {
     if (canvasRef.current) {
       const initCanvas = new Canvas(canvasRef.current, {
         height: window.innerHeight * 0.8,
-        width: (2/3) * (window.innerHeight * 0.8),
+        width: (2 / 3) * (window.innerHeight * 0.8),
         backgroundColor: "white",
       });
 
@@ -137,7 +147,7 @@ function App() {
       setCanvas(initCanvas);
 
       function handleResize() {
-        const width = (2/3) * (window.innerHeight * 0.8);
+        const width = (2 / 3) * (window.innerHeight * 0.8);
         const height = window.innerHeight * 0.8;
 
         initCanvas.setWidth(width);
@@ -146,12 +156,12 @@ function App() {
       }
 
       window.addEventListener("resize", handleResize);
-      
-      
+
+
       return () => {
         initCanvas.dispose();
         window.removeEventListener("resize", handleResize);
-        
+
       };
     }
   }, []);
@@ -160,7 +170,7 @@ function App() {
     <div className='container'>
       <canvas id="canvas" ref={canvasRef}></canvas>
       <button onClick={addCircle}>Add Circle</button>
-      
+
       <div className='imagesContainer'>
         <button onClick={() => stickerLoad(image1Url)}>sticker 1</button>
         <button onClick={() => stickerLoad(image2Url)}>sticker 2</button>
