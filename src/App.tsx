@@ -10,7 +10,7 @@ import { uploadString, ref } from "firebase/storage";
 
 function App() {
 
-
+  const name = 'jayb';
   const filename = 'filetest.png'; // unique name for each upload 
   const canvasRef = useRef(null);
   const [canvas, setCanvas] = useState<Canvas | null>(null);
@@ -106,7 +106,7 @@ function App() {
 
 
   function saveImage() {
-    const photoStrips = ref(storage, 'photoStrips/' + filename);
+    const photoStrips = ref(storage, `photoStrips/${name}/${filename}`);
     if (canvas) {
       const dataURL = canvas.toDataURL({
         multiplier: 1,
